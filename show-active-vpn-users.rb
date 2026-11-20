@@ -2,15 +2,21 @@
 
 =begin
 
-TODO 
-. fissare ampiezza delle colonne di output in modo che non ci 
-  siano troppi spazi vuoti
+---- TODO ----
 . mettere la versione sulla vpn principale con lo stesso codice qui
 . Definire classe Duration con la sua interfaccia di stampa 
   in formato human.
 . BUG. se nella stringa di tempo 
 . creare una stringa di help che poi si possa copiare nel README
 . gestire parametri "--help" e "--verbose" che mostra anche descrizione 
+. BUG. Se un utente non compare in /etc/hostname.wg0.users si
+  bloccat tutto.
+
+--- DONE ----
+. fissare ampiezza delle colonne di output in modo che non ci 
+  siano troppi spazi vuoti
+
+
 
 =end 
 
@@ -18,7 +24,8 @@ TODO
 # those global variables are implemented through class methods
 class Global
   class << self 
-    attr_accessor :peerList, :stanzaList, :user2faList, :opts, :blockedIpList
+    attr_accessor :peerList, :stanzaList, :user2faList, :opts, :blockedIpList,
+                  :justIp, :justUser, :justTime
   end
 end
 
@@ -27,9 +34,27 @@ class Peer
   attr_accessor :ip, :mask, :endpoint, :port, :last_handshake, :user, :note
 end
 
+class Peer
+  # return String representing the time passed since last handshake
+  # in a human readable format: "1d.7h.20s" .
+  def last_handshake_h()
+    oSec = oMin = oHour = oDay = 0 
+    oMin, oSec = self.last_handshake.to_i.divmod(60)   
+    oHour, oMin = oMin.divmod(60) if oMin >= 60 
+    oDay, oHour = oHour.divmod(24) if oHour >= 24
+    outStr = ""
+    if oDay > 0 then outStr  += "#{oDay}" + "d." end 
+    if oHour > 0 then outStr += ("#{oHour}".rjust(2,"0")) + "h." end 
+    if oMin > 0 then outStr  += ("#{oMin}".rjust(2,"0")) + "m."  end 
+    if oSec > 0 then outStr  += ("#{oSec}".rjust(2,"0")) + "s"  end 
+    # puts "oDay: #{oDay}, oHour: #{oHour} , oMin:#{oMin}, oSec:#{oSec} " 
+    outStr    
+  end
+end
+
 # . variabile globale che controlla se stiamo girando iterattivamente
 #   magari con IRB o Pry. Contiene un booleano. 
-$inter = !!(defined?(ORB) || defined?(Pry))
+$inter = !!(defined?(IRB) || defined?(Pry))
 
 
 # ==================================================
@@ -143,29 +168,18 @@ end
 #   compaia prima nella lista.
 Global.peerList.sort! { |a,b| a.last_handshake.to_i <=> b.last_handshake.to_i  } 
 
-# . riceve in input un intero positivo che rappresenta un numero di secondi
-# . in output ritorna una stringa del tipo "2d 12h 3m 50s" che rappresenta
-#   lo stesso numero di secondi ma espereggio in unità più comprensibili
-def sec_to_human(sec)
-  oSec = oMin = oHour = oDay = 0 
-  oMin, oSec = sec.divmod(60)   
-  oHour, oMin = oMin.divmod(60) if oMin >= 60 
-  oDay, oHour = oHour.divmod(24) if oHour >= 24
-  outStr = ""
-  if oDay > 0 then outStr  += "#{oDay}" + "d." end 
-  if oHour > 0 then outStr += ("#{oHour}".rjust(2,"0")) + "h." end 
-  if oMin > 0 then outStr  += ("#{oMin}".rjust(2,"0")) + "m."  end 
-  if oSec > 0 then outStr  += ("#{oSec}".rjust(2,"0")) + "s"  end 
-  # puts "oDay: #{oDay}, oHour: #{oHour} , oMin:#{oMin}, oSec:#{oSec} " 
-  outStr
-end 
 
+# . trovo il massimo numero di caratteri per la colonna IP, user e timeout
+Global.justIp = (Global.peerList.map { |x| x.ip.strip.size }).max
+Global.justTime = (Global.peerList.map { |x| x.last_handshake_h.strip.size }).max
+Global.justUser = (Global.peerList.map { |x| x.user.strip.size }).max
+                                                             
 
-Global.peerList.each do |peer|  
+Global.peerList.each do |peer|
   # puts "#{peer.ip}  #{sec_to_human(peer.last_handshake.to_i)} #{peer.user}"
-  ipF = "#{peer.ip}".rjust(16)
-  timeF = sec_to_human(peer.last_handshake.to_i).rjust(17)
-  userF = peer.user.strip
+  ipF = "#{peer.ip}".rjust(Global.justIp)
+  timeF = sec_to_human(peer.last_handshake.to_i).rjust(Global.justTime)
+  userF = peer.user.strip.rjust(Global.justUser)
   noteF = peer.note.strip
   puts "#{ipF}   #{timeF}   #{userF}   #{noteF}"  
   # puts "#{ipF} #{peer.last_handshake}s #{peer.user}"  
