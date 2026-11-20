@@ -2,6 +2,15 @@
 
 =begin
 
+TODO 
+. fissare ampiezza delle colonne di output in modo che non ci 
+  siano troppi spazi vuoti
+. mettere la versione sulla vpn principale con lo stesso codice qui
+. Definire classe Duration con la sua interfaccia di stampa 
+  in formato human.
+. BUG. se nella stringa di tempo 
+. creare una stringa di help che poi si possa copiare nel README
+. gestire parametri "--help" e "--verbose" che mostra anche descrizione 
 
 =end 
 
@@ -156,7 +165,9 @@ Global.peerList.each do |peer|
   # puts "#{peer.ip}  #{sec_to_human(peer.last_handshake.to_i)} #{peer.user}"
   ipF = "#{peer.ip}".rjust(16)
   timeF = sec_to_human(peer.last_handshake.to_i).rjust(17)
-  puts "#{ipF} #{timeF} #{peer.user}"  
+  userF = peer.user.strip
+  noteF = peer.note.strip
+  puts "#{ipF}   #{timeF}   #{userF}   #{noteF}"  
   # puts "#{ipF} #{peer.last_handshake}s #{peer.user}"  
 end
 
