@@ -15,7 +15,7 @@
 --- DONE ----
 . fissare ampiezza delle colonne di output in modo che non ci 
   siano troppi spazi vuoti
-
+. se la stringa di last_handshake_h termina con "." lo tolgo
 
 
 =end 
@@ -47,7 +47,8 @@ class Peer
     if oHour > 0 then outStr += ("#{oHour}".rjust(2,"0")) + "h." end 
     if oMin > 0 then outStr  += ("#{oMin}".rjust(2,"0")) + "m."  end 
     if oSec > 0 then outStr  += ("#{oSec}".rjust(2,"0")) + "s"  end 
-    # puts "oDay: #{oDay}, oHour: #{oHour} , oMin:#{oMin}, oSec:#{oSec} " 
+    # . se eventualmente è rimasto un punto alla fine lo tolgo
+    outStr.sub! /\.$/, "" 
     outStr    
   end
 end
@@ -176,9 +177,8 @@ Global.justUser = (Global.peerList.map { |x| x.user.strip.size }).max
                                                              
 
 Global.peerList.each do |peer|
-  # puts "#{peer.ip}  #{sec_to_human(peer.last_handshake.to_i)} #{peer.user}"
-  ipF = "#{peer.ip}".rjust(Global.justIp)
-  timeF = sec_to_human(peer.last_handshake.to_i).rjust(Global.justTime)
+  ipF = peer.ip.rjust(Global.justIp)
+  timeF = peer.last_handshake_h.rjust(Global.justTime)
   userF = peer.user.strip.rjust(Global.justUser)
   noteF = peer.note.strip
   puts "#{ipF}   #{timeF}   #{userF}   #{noteF}"  
